@@ -1,0 +1,51 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             request.auth.token.role == 'admin';
+    }
+    
+    // App icons and images
+    match /apps/{appId}/{allPaths=**} {
+      // Anyone can read app images
+      allow read: if true;
+      // Only admins can write
+      allow write: if isAdmin();
+    }
+    
+    // Site assets (logos, favicons, etc.)
+    match /site/{allPaths=**} {
+      // Anyone can read site assets
+      allow read: if true;
+      // Only admins can write
+      allow write: if isAdmin();
+    }
+    
+    // About page images
+    match /content/{allPaths=**} {
+      // Anyone can read content images
+      allow read: if true;
+      // Only admins can write
+      allow write: if isAdmin();
+    }
+    
+    // User uploads (if needed in future)
+    match /users/{userId}/{allPaths=**} {
+      // Users can read their own uploads
+      allow read: if request.auth.uid == userId;
+      // Users can write their own uploads, admins can write all
+      allow write: if request.auth.uid == userId || isAdmin();
+    }
+    
+    // Default rule - deny all access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
